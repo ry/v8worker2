@@ -2,7 +2,6 @@
 extern "C" {
 #endif
 
-
 struct worker_s;
 typedef struct worker_s worker;
 
@@ -26,5 +25,5 @@ void worker_dispose(worker* w);
 void worker_terminate_execution(worker* w);
 
 #ifdef __cplusplus
-} // extern "C"
+}  // extern "C"
 #endif

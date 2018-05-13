@@ -1,4 +1,25 @@
-package main
+/*
+Copyright 2018 Ryan Dahl <ry@tinyclouds.org>. All rights reserved.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to
+deal in the Software without restriction, including without limitation the
+rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+sell copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+IN THE SOFTWARE.
+*/
+package v8worker2
 
 import (
 	"testing"
@@ -19,13 +40,13 @@ func TestBasic(t *testing.T) {
 		recvCount++
 	})
 
-	code := ` $print("ready"); `
+	code := ` V8Worker2.print("ready"); `
 	err := worker.Load("code.js", code)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	codeWithSyntaxError := ` $print(hello world"); `
+	codeWithSyntaxError := ` V8Worker2.print(hello world"); `
 	err = worker.Load("codeWithSyntaxError.js", codeWithSyntaxError)
 	if err == nil {
 		t.Fatal("Expected error")
@@ -33,10 +54,10 @@ func TestBasic(t *testing.T) {
 	//println(err.Error())
 
 	codeWithRecv := `
-		$recv(function(msg) {
-			$print("recv msg", msg);
+		V8Worker2.recv(function(msg) {
+			V8Worker2.print("recv msg", msg);
 		});
-		$print("ready");
+		V8Worker2.print("ready");
 	`
 	err = worker.Load("codeWithRecv.js", codeWithRecv)
 	if err != nil {
@@ -45,8 +66,8 @@ func TestBasic(t *testing.T) {
 	worker.Send("hi")
 
 	codeWithSend := `
-		$send("hello");
-		$send("hello");
+		V8Worker2.send("hello");
+		V8Worker2.send("hello");
 	`
 	err = worker.Load("codeWithSend.js", codeWithSend)
 	if err != nil {
@@ -58,9 +79,9 @@ func TestBasic(t *testing.T) {
 	}
 }
 
-func TestUint8Array(t *testing.T) {
+func TestPrintUint8Array(t *testing.T) {
 	worker := New(func(msg string) {})
-	codeWithArrayBufferAllocator := ` var uint8 = new Uint8Array(256); $print(uint8); `
+	codeWithArrayBufferAllocator := ` var uint8 = new Uint8Array(256); V8Worker2.print(uint8); `
 	err := worker.Load("buffer.js", codeWithArrayBufferAllocator)
 	if err != nil {
 		t.Fatal(err)
@@ -78,12 +99,12 @@ func TestMultipleWorkers(t *testing.T) {
 		recvCount++
 	})
 
-	err := worker1.Load("1.js", `$send("hello1")`)
+	err := worker1.Load("1.js", `V8Worker2.send("hello1")`)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = worker2.Load("2.js", `$send("hello2")`)
+	err = worker2.Load("2.js", `V8Worker2.send("hello2")`)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -99,7 +120,7 @@ func TestRequestFromJS(t *testing.T) {
 		println("recv cb", msg)
 		caught = msg
 	})
-	code := ` $send("ping"); `
+	code := ` V8Worker2.send("ping"); `
 	err := worker.Load("code.js", code)
 	if err != nil {
 		t.Fatal(err)
@@ -120,7 +141,7 @@ func TestWorkerDeletion(t *testing.T) {
 			println("worker", msg)
 			recvCount++
 		})
-		err := worker.Load("1.js", `$send("hello1")`)
+		err := worker.Load("1.js", `V8Worker2.send("hello1")`)
 		if err != nil {
 			t.Fatal(err)
 		}

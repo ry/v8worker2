@@ -1,11 +1,33 @@
-#include <stdio.h>
+/*
+Copyright 2018 Ryan Dahl <ry@tinyclouds.org>. All rights reserved.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to
+deal in the Software without restriction, including without limitation the
+rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+sell copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+IN THE SOFTWARE.
+*/
 #include <assert.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <string>
-#include "v8.h"
-#include "libplatform/libplatform.h"
+
 #include "binding.h"
+#include "libplatform/libplatform.h"
+#include "v8.h"
 
 using namespace v8;
 
@@ -27,8 +49,7 @@ const char* ToCString(const String::Utf8Value& value) {
 std::string ExceptionString(worker* w, TryCatch* try_catch) {
   std::string out;
   size_t scratchSize = 20;
-  char scratch[scratchSize]; // just some scratch space for sprintf
-
+  char scratch[scratchSize];  // just some scratch space for sprintf
 
   HandleScope handle_scope(w->isolate);
   Local<Context> context = w->context.Get(w->isolate);
@@ -84,13 +105,10 @@ std::string ExceptionString(worker* w, TryCatch* try_catch) {
   return out;
 }
 
-
 extern "C" {
 #include "_cgo_export.h"
 
-const char* worker_version() {
-  return V8::GetVersion();
-}
+const char* worker_version() { return V8::GetVersion(); }
 
 const char* worker_last_exception(worker* w) {
   return w->last_exception.c_str();
@@ -242,7 +260,7 @@ int worker_send_bytes(worker* w, void* data, size_t len) {
 
   Local<Value> args[1];
   args[0] = ArrayBuffer::New(w->isolate, data, len,
-      ArrayBufferCreationMode::kInternalized);
+                             ArrayBufferCreationMode::kInternalized);
 
   assert(!try_catch.HasCaught());
 
@@ -263,11 +281,11 @@ void v8_init() {
 }
 
 worker* worker_new(int table_index) {
-  worker* w = new(worker);
+  worker* w = new (worker);
 
   Isolate::CreateParams create_params;
   create_params.array_buffer_allocator =
-    ArrayBuffer::Allocator::NewDefaultAllocator();
+      ArrayBuffer::Allocator::NewDefaultAllocator();
   Isolate* isolate = Isolate::New(create_params);
   Locker locker(isolate);
   Isolate::Scope isolate_scope(isolate);
@@ -279,30 +297,30 @@ worker* worker_new(int table_index) {
   w->table_index = table_index;
 
   Local<ObjectTemplate> global = ObjectTemplate::New(w->isolate);
+  Local<ObjectTemplate> v8worker2 = ObjectTemplate::New(w->isolate);
 
-  global->Set(String::NewFromUtf8(w->isolate, "$print"),
-              FunctionTemplate::New(w->isolate, Print));
+  global->Set(String::NewFromUtf8(w->isolate, "V8Worker2"), v8worker2);
 
-  global->Set(String::NewFromUtf8(w->isolate, "$recv"),
-              FunctionTemplate::New(w->isolate, Recv));
+  v8worker2->Set(String::NewFromUtf8(w->isolate, "print"),
+                 FunctionTemplate::New(w->isolate, Print));
 
-  global->Set(String::NewFromUtf8(w->isolate, "$send"),
-              FunctionTemplate::New(w->isolate, Send));
+  v8worker2->Set(String::NewFromUtf8(w->isolate, "recv"),
+                 FunctionTemplate::New(w->isolate, Recv));
+
+  v8worker2->Set(String::NewFromUtf8(w->isolate, "send"),
+                 FunctionTemplate::New(w->isolate, Send));
 
   Local<Context> context = Context::New(w->isolate, NULL, global);
   w->context.Reset(w->isolate, context);
-  //context->Enter();
+  // context->Enter();
 
   return w;
 }
 
 void worker_dispose(worker* w) {
   w->isolate->Dispose();
-  delete(w);
+  delete (w);
 }
 
-void worker_terminate_execution(worker* w) {
-  w->isolate->TerminateExecution();
-}
-
+void worker_terminate_execution(worker* w) { w->isolate->TerminateExecution(); }
 }
