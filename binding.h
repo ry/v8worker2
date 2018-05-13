@@ -17,9 +17,7 @@ int worker_load(worker* w, char* name_s, char* source_s);
 
 const char* worker_last_exception(worker* w);
 
-int worker_send(worker* w, const char* msg);
 int worker_send_bytes(worker* w, void* data, size_t len);
-const char* worker_send_sync(worker* w, const char* msg);
 
 void worker_dispose(worker* w);
 void worker_terminate_execution(worker* w);

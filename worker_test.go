@@ -32,21 +32,21 @@ func TestVersion(t *testing.T) {
 
 func TestBasic(t *testing.T) {
 	recvCount := 0
-	worker := New(func(msg string) {
-		println("recv cb", msg)
-		if msg != "hello" {
+	worker := New(func(msg []byte) []byte {
+		if len(msg) != 5 {
 			t.Fatal("bad msg", msg)
 		}
 		recvCount++
+		return nil
 	})
 
-	code := ` V8Worker2.print("ready"); `
+	code := `V8Worker2.print("ready");`
 	err := worker.Load("code.js", code)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	codeWithSyntaxError := ` V8Worker2.print(hello world"); `
+	codeWithSyntaxError := `V8Worker2.print(hello world");`
 	err = worker.Load("codeWithSyntaxError.js", codeWithSyntaxError)
 	if err == nil {
 		t.Fatal("Expected error")
@@ -55,7 +55,12 @@ func TestBasic(t *testing.T) {
 
 	codeWithRecv := `
 		V8Worker2.recv(function(msg) {
-			V8Worker2.print("recv msg", msg);
+			var enc = new TextDecoder("ascii");
+			var str = enc.decode(msg);
+			if (str !== "hii") {
+				throw Error("bad message");
+			}
+			V8Worker2.print("recv msg", str);
 		});
 		V8Worker2.print("ready");
 	`
@@ -63,11 +68,11 @@ func TestBasic(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	worker.Send("hi")
+	worker.SendBytes([]byte("hii"))
 
 	codeWithSend := `
-		V8Worker2.send("hello");
-		V8Worker2.send("hello");
+		V8Worker2.send(new ArrayBuffer(5));
+		V8Worker2.send(new ArrayBuffer(5));
 	`
 	err = worker.Load("codeWithSend.js", codeWithSend)
 	if err != nil {
@@ -80,8 +85,13 @@ func TestBasic(t *testing.T) {
 }
 
 func TestPrintUint8Array(t *testing.T) {
-	worker := New(func(msg string) {})
-	codeWithArrayBufferAllocator := ` var uint8 = new Uint8Array(256); V8Worker2.print(uint8); `
+	worker := New(func(msg []byte) []byte {
+		return nil
+	})
+	codeWithArrayBufferAllocator := `
+		var uint8 = new Uint8Array(16);
+		V8Worker2.print(uint8);
+	`
 	err := worker.Load("buffer.js", codeWithArrayBufferAllocator)
 	if err != nil {
 		t.Fatal(err)
@@ -90,21 +100,27 @@ func TestPrintUint8Array(t *testing.T) {
 
 func TestMultipleWorkers(t *testing.T) {
 	recvCount := 0
-	worker1 := New(func(msg string) {
-		println("w1", msg)
+	worker1 := New(func(msg []byte) []byte {
+		if len(msg) != 5 {
+			t.Fatal("bad message")
+		}
 		recvCount++
+		return nil
 	})
-	worker2 := New(func(msg string) {
-		println("w2", msg)
+	worker2 := New(func(msg []byte) []byte {
+		if len(msg) != 3 {
+			t.Fatal("bad message")
+		}
 		recvCount++
+		return nil
 	})
 
-	err := worker1.Load("1.js", `V8Worker2.send("hello1")`)
+	err := worker1.Load("1.js", `V8Worker2.send(new ArrayBuffer(5))`)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = worker2.Load("2.js", `V8Worker2.send("hello2")`)
+	err = worker2.Load("2.js", `V8Worker2.send(new ArrayBuffer(3))`)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -115,49 +131,25 @@ func TestMultipleWorkers(t *testing.T) {
 }
 
 func TestRequestFromJS(t *testing.T) {
-	var caught string
-	worker := New(func(msg string) {
-		println("recv cb", msg)
-		caught = msg
+	var captured []byte
+	worker := New(func(msg []byte) []byte {
+		captured = msg
+		return nil
 	})
-	code := ` V8Worker2.send("ping"); `
+	code := ` V8Worker2.send(new ArrayBuffer(4)); `
 	err := worker.Load("code.js", code)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if caught != "ping" {
+	if len(captured) != 4 {
 		t.Fail()
 	}
 }
 
-/*
-//I have profiled this repeatedly with massive values to ensure
-//memory does indeed get reclaimed and that the finalizer
-// gets called and the C-side of this does clean up memory correctly.
-func TestWorkerDeletion(t *testing.T) {
-	recvCount := 0
-	for i := 1; i <= 100; i++ {
-		worker := New(func(msg string) {
-			println("worker", msg)
-			recvCount++
-		})
-		err := worker.Load("1.js", `V8Worker2.send("hello1")`)
-		if err != nil {
-			t.Fatal(err)
-		}
-		runtime.GC()
-	}
-
-	if recvCount != 100 {
-		t.Fatal("bad recvCount", recvCount)
-	}
-}
-*/
-
 // Test breaking script execution
 func TestWorkerBreaking(t *testing.T) {
-	worker := New(func(msg string) {
-		println("recv cb", msg)
+	worker := New(func(msg []byte) []byte {
+		return nil
 	})
 
 	go func(w *Worker) {
@@ -167,27 +159,3 @@ func TestWorkerBreaking(t *testing.T) {
 
 	worker.Load("forever.js", ` while (true) { ; } `)
 }
-
-/*
-func TestTightCreateLoop(t *testing.T) {
-	println("create 3000 workers in tight loop to see if we get OOM")
-	for i := 0; i < 3000; i++ {
-		runSimpleWorker(t)
-	}
-	println("success")
-}
-
-func runSimpleWorker(t *testing.T) {
-	w := New(nil, nil)
-	defer w.Dispose()
-
-	err := w.Load("mytest.js", `
-	               // Do something
-	               var something = "Simple JavaScript";
-	       `)
-
-	if err != nil {
-		t.Fatal(err)
-	}
-}
-*/

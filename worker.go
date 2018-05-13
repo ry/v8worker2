@@ -46,7 +46,7 @@ var workerTable = make(map[workerTableIndex]*worker)
 var workerTableNextAvailable workerTableIndex = 0
 
 // To receive messages from javascript...
-type ReceiveMessageCallback func(msg string)
+type ReceiveMessageCallback func(msg []byte) []byte
 
 // Don't init V8 more than once.
 var initV8Once sync.Once
@@ -77,10 +77,11 @@ func workerTableLookup(index workerTableIndex) *worker {
 }
 
 //export recvCb
-func recvCb(msg_s *C.char, index workerTableIndex) {
-	msg := C.GoString(msg_s)
+func recvCb(buf unsafe.Pointer, buflen C.int, index workerTableIndex) {
+	gbuf := C.GoBytes(buf, buflen)
 	w := workerTableLookup(index)
-	w.cb(msg)
+	w.cb(gbuf)
+	// TODO use the return value of cb()
 }
 
 // Creates a new worker, which corresponds to a V8 isolate. A single threaded
@@ -140,20 +141,6 @@ func (w *Worker) Load(scriptName string, code string) error {
 		errStr := C.GoString(C.worker_last_exception(w.worker.cWorker))
 		return errors.New(errStr)
 	}
-	return nil
-}
-
-// Sends a message to a worker. The $recv callback in js will be called.
-func (w *Worker) Send(msg string) error {
-	msg_s := C.CString(string(msg))
-	defer C.free(unsafe.Pointer(msg_s))
-
-	r := C.worker_send(w.worker.cWorker, msg_s)
-	if r != 0 {
-		errStr := C.GoString(C.worker_last_exception(w.worker.cWorker))
-		return errors.New(errStr)
-	}
-
 	return nil
 }
 

@@ -165,7 +165,7 @@ void Print(const FunctionCallbackInfo<Value>& args) {
   fflush(stdout);
 }
 
-// sets the recv callback.
+// Sets the recv callback.
 void Recv(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
   worker* w = (worker*)isolate->GetData(0);
@@ -183,65 +183,34 @@ void Recv(const FunctionCallbackInfo<Value>& args) {
   w->recv.Reset(isolate, func);
 }
 
-// Called from javascript. Must route message to golang.
+// Called from JavaScript, routes message to golang.
 void Send(const FunctionCallbackInfo<Value>& args) {
-  std::string msg;
-  worker* w = NULL;
-  {
-    Isolate* isolate = args.GetIsolate();
-    w = static_cast<worker*>(isolate->GetData(0));
-    assert(w->isolate == isolate);
+  Isolate* isolate = args.GetIsolate();
+  worker* w = static_cast<worker*>(isolate->GetData(0));
+  assert(w->isolate == isolate);
 
-    Locker locker(w->isolate);
-    HandleScope handle_scope(isolate);
-
-    Local<Context> context = Local<Context>::New(w->isolate, w->context);
-    Context::Scope context_scope(context);
-
-    Local<Value> v = args[0];
-    assert(v->IsString());
-
-    String::Utf8Value str(v);
-    msg = ToCString(str);
-  }
-
-  // XXX should we use Unlocker?
-  recvCb((char*)msg.c_str(), w->table_index);
-}
-
-// Called from golang. Must route message to javascript lang.
-// non-zero return value indicates error. check worker_last_exception().
-int worker_send(worker* w, const char* msg) {
   Locker locker(w->isolate);
-  Isolate::Scope isolate_scope(w->isolate);
-  HandleScope handle_scope(w->isolate);
+  HandleScope handle_scope(isolate);
 
   Local<Context> context = Local<Context>::New(w->isolate, w->context);
   Context::Scope context_scope(context);
 
-  TryCatch try_catch(w->isolate);
+  Local<Value> v = args[0];
+  assert(v->IsArrayBuffer());
 
-  Local<Function> recv = Local<Function>::New(w->isolate, w->recv);
-  if (recv.IsEmpty()) {
-    w->last_exception = "$recv not called";
-    return 1;
-  }
+  auto ab = Local<ArrayBuffer>::Cast(v);
+  auto contents = ab->GetContents();
 
-  Local<Value> args[1];
-  args[0] = String::NewFromUtf8(w->isolate, msg);
+  void* buf = contents.Data();
+  int buflen = static_cast<int>(contents.ByteLength());
 
-  assert(!try_catch.HasCaught());
-
-  recv->Call(context->Global(), 1, args);
-
-  if (try_catch.HasCaught()) {
-    w->last_exception = ExceptionString(w, &try_catch);
-    return 2;
-  }
-
-  return 0;
+  // XXX should we use Unlocker?
+  recvCb(buf, buflen, w->table_index);
+  // TODO do something with the return value.
 }
 
+// Called from golang. Must route message to javascript lang.
+// non-zero return value indicates error. check worker_last_exception().
 int worker_send_bytes(worker* w, void* data, size_t len) {
   Locker locker(w->isolate);
   Isolate::Scope isolate_scope(w->isolate);
@@ -254,7 +223,7 @@ int worker_send_bytes(worker* w, void* data, size_t len) {
 
   Local<Function> recv = Local<Function>::New(w->isolate, w->recv);
   if (recv.IsEmpty()) {
-    w->last_exception = "$recv not called";
+    w->last_exception = "V8Worker2.recv not called";
     return 1;
   }
 
