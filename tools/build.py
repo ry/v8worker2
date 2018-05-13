@@ -5,7 +5,7 @@ import stat
 import subprocess
 import sys
 
-root_path = os.path.dirname(os.path.realpath(__file__))
+root_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 v8_path = os.path.join(root_path, "v8")
 out_path = os.path.join(root_path, "out/v8build")
 depot_tools = os.path.join(root_path, "depot_tools")

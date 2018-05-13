@@ -10,7 +10,7 @@ To build:
 ```
 git clone --recurse-submodules git://github.com/ry/v8worker2.git
 cd v8worker2
-./build.py  # this will take ~30 minutes
+./tools/build.py  # this will take ~30 minutes
 go test
 ```
 
