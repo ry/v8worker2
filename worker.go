@@ -27,9 +27,6 @@ var workerTableNextAvailable workerTableIndex = 0
 // To receive messages from javascript...
 type ReceiveMessageCallback func(msg string)
 
-// To send a message from javascript and synchronously return a string.
-type ReceiveSyncMessageCallback func(msg string) string
-
 // Don't init V8 more than once.
 var initV8Once sync.Once
 
@@ -38,7 +35,6 @@ var initV8Once sync.Once
 type worker struct {
 	cWorker    *C.worker
 	cb         ReceiveMessageCallback
-	sync_cb    ReceiveSyncMessageCallback
 	tableIndex workerTableIndex
 }
 
@@ -66,21 +62,12 @@ func recvCb(msg_s *C.char, index workerTableIndex) {
 	w.cb(msg)
 }
 
-//export recvSyncCb
-func recvSyncCb(msg_s *C.char, index workerTableIndex) *C.char {
-	msg := C.GoString(msg_s)
-	w := workerTableLookup(index)
-	return_s := C.CString(w.sync_cb(msg))
-	return return_s
-}
-
 // Creates a new worker, which corresponds to a V8 isolate. A single threaded
 // standalone execution context.
-func New(cb ReceiveMessageCallback, sync_cb ReceiveSyncMessageCallback) *Worker {
+func New(cb ReceiveMessageCallback) *Worker {
 	workerTableLock.Lock()
 	w := &worker{
 		cb:         cb,
-		sync_cb:    sync_cb,
 		tableIndex: workerTableNextAvailable,
 	}
 
@@ -161,16 +148,6 @@ func (w *Worker) SendBytes(msg []byte) error {
 	}
 
 	return nil
-}
-
-// SendSync sends a message to a worker. The $recvSync callback in js will be called.
-// That callback will return a string which is passed to golang and used as the return value of SendSync.
-func (w *Worker) SendSync(msg string) string {
-	msg_s := C.CString(string(msg))
-	defer C.free(unsafe.Pointer(msg_s))
-
-	svalue := C.worker_send_sync(w.worker.cWorker, msg_s)
-	return C.GoString(svalue)
 }
 
 // Terminates execution of javascript
