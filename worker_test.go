@@ -93,6 +93,32 @@ func TestSendRecv(t *testing.T) {
 	}
 }
 
+func TestSendWithReturnArrayBuffer(t *testing.T) {
+	recvCount := 0
+	worker := New(func(msg []byte) []byte {
+		if len(msg) != 123 {
+			t.Fatal("unexpected message")
+		}
+		recvCount++
+		return []byte{1, 2, 3}
+	})
+	err := worker.Load("TestSendWithReturnArrayBuffer.js", `
+		var ret = V8Worker2.send(new ArrayBuffer(123));
+		if (!(ret instanceof ArrayBuffer)) throw Error("bad");
+		if (ret.byteLength !== 3) throw Error("bad");
+		ret = new Uint8Array(ret);
+		if (ret[0] !== 1) throw Error("bad");
+		if (ret[1] !== 2) throw Error("bad");
+		if (ret[2] !== 3) throw Error("bad");
+	`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if recvCount != 1 {
+		t.Fatal("bad recvCount", recvCount)
+	}
+}
+
 func TestThrowDuringLoad(t *testing.T) {
 	worker := New(func(msg []byte) []byte {
 		return nil

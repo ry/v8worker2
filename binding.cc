@@ -190,7 +190,7 @@ void Send(const FunctionCallbackInfo<Value>& args) {
   assert(w->isolate == isolate);
 
   Locker locker(w->isolate);
-  HandleScope handle_scope(isolate);
+  EscapableHandleScope handle_scope(isolate);
 
   Local<Context> context = Local<Context>::New(w->isolate, w->context);
   Context::Scope context_scope(context);
@@ -204,9 +204,20 @@ void Send(const FunctionCallbackInfo<Value>& args) {
   void* buf = contents.Data();
   int buflen = static_cast<int>(contents.ByteLength());
 
-  // XXX should we use Unlocker?
-  recvCb(buf, buflen, w->table_index);
-  // TODO do something with the return value.
+  auto retbuf = recvCb(buf, buflen, w->table_index);
+  if (retbuf.data) {
+    auto ab = ArrayBuffer::New(w->isolate, retbuf.data, retbuf.len,
+                               ArrayBufferCreationMode::kInternalized);
+    /*
+    // I'm slightly worried the above ArrayBuffer construction leaks memory
+    // the following might be a safer way to do it.
+    auto ab = ArrayBuffer::New(w->isolate, retbuf.len);
+    auto contents = ab->GetContents();
+    memcpy(contents.Data(), retbuf.data, retbuf.len);
+    free(retbuf.data);
+    */
+    args.GetReturnValue().Set(handle_scope.Escape(ab));
+  }
 }
 
 // Called from golang. Must route message to javascript lang.

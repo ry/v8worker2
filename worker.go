@@ -77,11 +77,16 @@ func workerTableLookup(index workerTableIndex) *worker {
 }
 
 //export recvCb
-func recvCb(buf unsafe.Pointer, buflen C.int, index workerTableIndex) {
+func recvCb(buf unsafe.Pointer, buflen C.int, index workerTableIndex) C.buf {
 	gbuf := C.GoBytes(buf, buflen)
 	w := workerTableLookup(index)
-	w.cb(gbuf)
-	// TODO use the return value of cb()
+	retbuf := w.cb(gbuf)
+	if retbuf != nil {
+		retbufptr := C.CBytes(retbuf) // Note it's up to the caller to free this.
+		return C.buf{retbufptr, C.size_t(len(retbuf))}
+	} else {
+		return C.buf{nil, 0}
+	}
 }
 
 // Creates a new worker, which corresponds to a V8 isolate. A single threaded

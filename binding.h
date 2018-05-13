@@ -19,12 +19,20 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 IN THE SOFTWARE.
 */
+#ifndef BINDING_H
+#define BINDING_H
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 struct worker_s;
 typedef struct worker_s worker;
+
+struct buf_s {
+  void* data;
+  size_t len;
+};
+typedef struct buf_s buf;
 
 const char* worker_version();
 
@@ -46,3 +54,4 @@ void worker_terminate_execution(worker* w);
 #ifdef __cplusplus
 }  // extern "C"
 #endif
+#endif  // BINDING_H
