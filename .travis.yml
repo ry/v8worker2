@@ -4,8 +4,6 @@ go:
 cache:
   directories:
    - out
-   - v8
-   - depot_tools
 install:
  - ./tools/build.py
 script:
