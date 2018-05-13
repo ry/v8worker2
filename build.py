@@ -65,12 +65,6 @@ GCLIENT_SOLUTION = [
 def main():
   env = os.environ.copy()
 
-  # Checkout submodules if they don't exist.
-  if not os.path.exists("v8") or not os.path.exists("depot_tools"):
-    subprocess.check_call(
-      "git submodule update --depth 1 --init --recursive".split(),
-      env=env)
-
   EnsureDeps(v8_path)
 
   gn_path = os.path.join(depot_tools, "gn")
