@@ -21,6 +21,8 @@ IN THE SOFTWARE.
 */
 package v8worker2
 
+//go:generate ./tools/build.py
+
 /*
 #cgo CXXFLAGS: -std=c++11
 #cgo pkg-config: out/v8.pc

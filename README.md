@@ -1,5 +1,7 @@
 # v8worker2
 
+[![Build Status](https://travis-ci.org/ry/v8worker2.svg?branch=master)](https://travis-ci.org/ry/v8worker2)
+
 This is a minimal binding between Go (golang) and V8 JavaScript. Basic concept
 is to only expose two methods to JavaScript: send and receive.
 

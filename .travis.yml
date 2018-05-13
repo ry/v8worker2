@@ -1,13 +1,12 @@
 language: go
-
 go:
- - 1.5.1
- - release
-
+ - 1.9.2
 cache:
   directories:
    - out
-
-script:
+   - v8
+   - depot_tools
+install:
  - ./tools/build.py
+script:
  - ./tools/test.sh
