@@ -1,0 +1,9 @@
+[submodule "v8"]
+	path = v8
+	url = https://github.com/v8/v8.git
+	branch = 6.6.164
+	shallow = true
+[submodule "depot_tools"]
+	path = depot_tools
+	url = https://chromium.googlesource.com/chromium/tools/depot_tools.git
+	shallow = true
