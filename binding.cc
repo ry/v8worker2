@@ -223,14 +223,14 @@ int worker_send_bytes(worker* w, void* data, size_t len) {
 
   Local<Function> recv = Local<Function>::New(w->isolate, w->recv);
   if (recv.IsEmpty()) {
-    w->last_exception = "V8Worker2.recv not called";
+    w->last_exception = "V8Worker2.recv has not been called.";
     return 1;
   }
 
   Local<Value> args[1];
   args[0] = ArrayBuffer::New(w->isolate, data, len,
                              ArrayBufferCreationMode::kInternalized);
-
+  assert(!args[0].IsEmpty());
   assert(!try_catch.HasCaught());
 
   recv->Call(context->Global(), 1, args);

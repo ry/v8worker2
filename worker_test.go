@@ -22,6 +22,7 @@ IN THE SOFTWARE.
 package v8worker2
 
 import (
+	"strings"
 	"testing"
 	"time"
 )
@@ -51,24 +52,23 @@ func TestBasic(t *testing.T) {
 	if err == nil {
 		t.Fatal("Expected error")
 	}
-	//println(err.Error())
 
 	codeWithRecv := `
 		V8Worker2.recv(function(msg) {
-			var enc = new TextDecoder("ascii");
-			var str = enc.decode(msg);
-			if (str !== "hii") {
+			V8Worker2.print("TestBasic recv byteLength", msg.byteLength);
+			if (msg.byteLength !== 3) {
 				throw Error("bad message");
 			}
-			V8Worker2.print("recv msg", str);
 		});
-		V8Worker2.print("ready");
 	`
 	err = worker.Load("codeWithRecv.js", codeWithRecv)
 	if err != nil {
 		t.Fatal(err)
 	}
-	worker.SendBytes([]byte("hii"))
+	err = worker.SendBytes([]byte("hii"))
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	codeWithSend := `
 		V8Worker2.send(new ArrayBuffer(5));
@@ -81,6 +81,43 @@ func TestBasic(t *testing.T) {
 
 	if recvCount != 2 {
 		t.Fatal("bad recvCount", recvCount)
+	}
+}
+
+func TestThrowDuringLoad(t *testing.T) {
+	worker := New(func(msg []byte) []byte {
+		return nil
+	})
+	err := worker.Load("TestThrowDuringLoad.js", `throw Error("bad");`)
+	if err == nil {
+		t.Fatal("Expected to get error")
+	}
+	if !strings.Contains(err.Error(), "TestThrowDuringLoad.js") {
+		t.Fatal("Expected error to have 'TestThrowDuringLoad.js' in it.")
+	}
+}
+
+func TestThrowInRecvCallback(t *testing.T) {
+	worker := New(func(msg []byte) []byte {
+		return nil
+	})
+	err := worker.Load("TestThrowInRecvCallback.js", `
+		V8Worker2.recv(function(msg) {
+			throw Error("bad message");
+		});
+	`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = worker.SendBytes([]byte("abcd"))
+	if err == nil {
+		t.Fatal("Expected to get error")
+	}
+	if !strings.Contains(err.Error(), "TestThrowInRecvCallback.js") {
+		t.Fatal("Expected error to have 'TestThrowInRecvCallback.js' in it.")
+	}
+	if !strings.Contains(err.Error(), "bad message") {
+		t.Fatal("Expected error to have 'bad message' in it.")
 	}
 }
 
