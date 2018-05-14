@@ -7,22 +7,77 @@ is to only expose two methods to JavaScript: send and receive.
 
 V8 Version: 6.6.164 (Feb 2018)
 
+[A rather dated presentation on this project](https://docs.google.com/presentation/d/1RgGVgLuP93mPZ0lqHhm7TOpxZBI3TEdAJQZzFqeleAE/edit?usp=sharing)
 
-To build:
+
+## Installing
+
+Due to the complexity of building V8, this package is not buildable with `go
+get`.
+
+To install:
 ```
-git clone --recurse-submodules git://github.com/ry/v8worker2.git
-cd v8worker2
-./tools/build.py  # this will take ~30 minutes
-go test
+go get github.com/ry/v8worker2
+cd `go env GOPATH`/src/github.com/ry/v8worker2
+./tools/build.py  # This will take ~30 minutes
 ```
-
-The JavaScript interface is exposed thru a single global object:
-```typescript
-V8Worker2.print(str: string): void;
-
-V8Worker2.send(ab: ArrayBuffer): null | ArrayBuffer;
-
-V8Worker2.recv(callback: (ab: ArrayBuffer) => null | ArrayBuffer): void;
-```
+If you have `ccache` installed, the build will take advantage of it.
 
 
+## JavaScript API
+
+The JavaScript interface is exposed thru a single global namespace `V8Worker2`.
+The interface has just three methods `V8worker2.print()`, `V8Worker2.send()`,
+and `V8Worker2.recv()`.
+See
+[v8worker2.d.ts](https://github.com/ry/v8worker2/blob/master/v8worker2.d.ts)
+for the details.
+
+
+## Golang API
+
+Documentation is at https://godoc.org/github.com/ry/v8worker2 and
+example usage is at
+[worker_test.go](https://github.com/ry/v8worker/blob/master/worker_test.go)
+
+
+## Difference from the original v8worker
+
+ * The original v8worker operated on strings. v8worker2 operates on
+   ArrayBuffers.
+
+ * The original included `recvSync` and `sendSync` methods. These were
+   deemed unnecessary. Now `send()` can operate both sychronously by
+   returning another ArrayBuffer. Simply return a `[]byte` from the golang
+   recv callback.
+
+ * This version is compatible with modern V8, has a better build
+   setup, and uses travis for CI.
+
+ * The original prefixed the methods with dollar signs, this version uses a
+   global name space object and provides a typescript declaration file.
+
+
+## License
+
+MIT License. Contributions welcome.
+
+		Copyright 2015-2018 Ryan Dahl <ry@tinyclouds.org>. All rights reserved.
+
+		Permission is hereby granted, free of charge, to any person obtaining a copy
+		of this software and associated documentation files (the "Software"), to
+		deal in the Software without restriction, including without limitation the
+		rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+		sell copies of the Software, and to permit persons to whom the Software is
+		furnished to do so, subject to the following conditions:
+
+		The above copyright notice and this permission notice shall be included in
+		all copies or substantial portions of the Software.
+
+		THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+		IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+		FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+		AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+		LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+		FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+		IN THE SOFTWARE.
