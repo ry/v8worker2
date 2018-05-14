@@ -94,7 +94,7 @@ def WriteProgramConifgFile():
   assert os.path.exists(lib_fn)
   pc_fn = os.path.join(root_path, "out/v8.pc")
   include_dir = os.path.join(root_path, "v8/include")
-  with open(pc_fn, 'a') as f:
+  with open(pc_fn, 'w+') as f:
     f.write("Name: v8\n")
     f.write("Description: v8\n")
     f.write("Version: xxx\n")
