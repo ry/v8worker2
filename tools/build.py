@@ -98,16 +98,14 @@ def WriteProgramConifgFile():
 
 def EnsureDeps(v8_path):
   # Now call gclient sync.
-  gclient_entries_fn = os.path.join(root_path, ".gclient_entries")
-  if not os.path.exists(gclient_entries_fn):
-    spec = "solutions = %s" % GCLIENT_SOLUTION
-    print "Fetching dependencies."
-    env = os.environ.copy()
-    # gclient needs to have depot_tools in the PATH.
-    env["PATH"] = depot_tools + os.pathsep + env["PATH"]
-    subprocess.check_call(["gclient", "sync", "--spec", spec],
-                          cwd=os.path.join(v8_path, os.path.pardir),
-                          env=env)
+  spec = "solutions = %s" % GCLIENT_SOLUTION
+  print "Fetching dependencies."
+  env = os.environ.copy()
+  # gclient needs to have depot_tools in the PATH.
+  env["PATH"] = depot_tools + os.pathsep + env["PATH"]
+  subprocess.check_call(["gclient", "sync", "--spec", spec],
+                        cwd=os.path.join(v8_path, os.path.pardir),
+                        env=env)
 
 if __name__ == "__main__":
   main()
