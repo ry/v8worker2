@@ -32,7 +32,6 @@ IN THE SOFTWARE.
 using namespace v8;
 
 struct worker_s {
-  int x;
   int table_index;
   Isolate* isolate;
   std::string last_exception;

@@ -21,7 +21,7 @@ go get github.com/ry/v8worker2
 cd `go env GOPATH`/src/github.com/ry/v8worker2
 ./tools/build.py  # This will take ~30 minutes
 ```
-If you have `ccache` installed, the build will take advantage of it.
+If you have ccache installed, the build will take advantage of it.
 
 
 ## JavaScript API
@@ -43,8 +43,8 @@ example usage is at
 
 ## Difference from the original v8worker
 
- * The original v8worker operated on strings. v8worker2 operates on
-   ArrayBuffers.
+ * The original v8worker passed strings Go and V8. v8worker2 instead passes
+   ArrayBuffers, which is more efficient.
 
  * The original included `recvSync` and `sendSync` methods. These were
    deemed unnecessary. Now `send()` can operate both sychronously by
@@ -52,7 +52,7 @@ example usage is at
    recv callback.
 
  * This version is compatible with modern V8, has a better build
-   setup, and uses travis for CI.
+   setup, and uses Travis for CI.
 
  * The original prefixed the methods with dollar signs, this version uses a
    global name space object and provides a typescript declaration file.

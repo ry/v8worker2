@@ -45,7 +45,7 @@ var workerTable = make(map[workerTableIndex]*worker)
 // Keeps track of the last used table index. Incremeneted when a worker is created.
 var workerTableNextAvailable workerTableIndex = 0
 
-// To receive messages from javascript...
+// To receive messages from javascript.
 type ReceiveMessageCallback func(msg []byte) []byte
 
 // Don't init V8 more than once.
@@ -65,7 +65,7 @@ type Worker struct {
 	disposed bool
 }
 
-// Return the V8 version E.G. "4.3.59"
+// Return the V8 version E.G. "6.6.164-v8worker2"
 func Version() string {
 	return C.GoString(C.worker_version())
 }
