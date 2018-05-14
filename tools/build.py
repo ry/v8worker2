@@ -4,6 +4,7 @@ import shutil
 import stat
 import subprocess
 import sys
+import distutils.spawn
 
 root_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 v8_path = os.path.join(root_path, "v8")
@@ -73,6 +74,11 @@ def main():
   assert os.path.exists(ninja_path)
 
   args = GN_ARGS.replace('\n', ' ')
+
+  ccache_fn = distutils.spawn.find_executable("ccache")
+  if ccache_fn:
+    args += " cc_wrapper=\"%s\"" % ccache_fn
+
   print "Running gn"
   subprocess.check_call([gn_path, "gen", out_path, "--args=" + args],
                         cwd=v8_path,
