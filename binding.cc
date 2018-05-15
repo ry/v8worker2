@@ -109,6 +109,10 @@ extern "C" {
 
 const char* worker_version() { return V8::GetVersion(); }
 
+void worker_set_flags(int* argc, char** argv) {
+	V8::SetFlagsFromCommandLine(argc, argv, true);
+}
+
 const char* worker_last_exception(worker* w) {
   return w->last_exception.c_str();
 }

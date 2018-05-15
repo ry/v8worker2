@@ -31,6 +31,17 @@ func TestVersion(t *testing.T) {
 	println(Version())
 }
 
+func TestSetFlags(t *testing.T) {
+	// One of the V8 flags to use as a test:
+	//   --lazy (use lazy compilation)
+	//      type: bool  default: true
+	args := []string{"hello", "--lazy", "foobar"}
+	modified := SetFlags(args)
+	if len(modified) != 2 || modified[0] != "hello" || modified[1] != "foobar" {
+		t.Fatalf("unexpected %v", modified)
+	}
+}
+
 func TestPrint(t *testing.T) {
 	worker := New(func(msg []byte) []byte {
 		t.Fatal("shouldn't recieve Message")

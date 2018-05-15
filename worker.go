@@ -70,6 +70,35 @@ func Version() string {
 	return C.GoString(C.worker_version())
 }
 
+// Sets V8 flags. Returns the input args but with the V8 flags removed.
+// Use --help to print a list of flags to stdout.
+func SetFlags(args []string) []string {
+	// We need to turn args into a **char so it can be modified by V8.
+	// Then we will turn the result back into a Go array and return it.
+
+	// Step 1: turn args into a C array called argv.
+	ptrSize := C.size_t(unsafe.Sizeof(uintptr(0)))
+	argv := C.malloc(ptrSize * C.size_t(len(args)))
+	defer C.free(unsafe.Pointer(argv))
+	// Type system abuse here. We choose a large constant, 10000, to fool Go.
+	a := (*[10000]*C.char)(argv)
+	for i := 0; i < len(args); i++ {
+		cstr := unsafe.Pointer(C.CString(args[i]))
+		defer C.free(cstr)
+		a[i] = (*C.char)(cstr)
+	}
+	argc := C.int(len(args))
+	argcPtr := (*C.int)(unsafe.Pointer(&argc))
+	argvPtr := (**C.char)(unsafe.Pointer(argv))
+	C.worker_set_flags(argcPtr, argvPtr)
+	// Step 2: Turn the modified args back into []string.
+	out := make([]string, argc)
+	for i := 0; i < int(argc); i++ {
+		out[i] = C.GoString(a[i])
+	}
+	return out
+}
+
 func workerTableLookup(index workerTableIndex) *worker {
 	workerTableLock.Lock()
 	defer workerTableLock.Unlock()
