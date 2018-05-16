@@ -43,8 +43,8 @@ example usage is at
 
 ## Difference from the original v8worker
 
- * The original v8worker passed strings Go and V8. v8worker2 instead passes
-   ArrayBuffers, which is more efficient.
+ * The original v8worker passed strings between Go and V8. v8worker2 instead
+   communicates using ArrayBuffer, which is more efficient.
 
  * The original included `recvSync` and `sendSync` methods. These were
    deemed unnecessary. Now `send()` can operate both sychronously by
