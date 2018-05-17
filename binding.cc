@@ -24,10 +24,12 @@ IN THE SOFTWARE.
 #include <stdlib.h>
 #include <string.h>
 #include <string>
+#include <map>
 
 #include "binding.h"
 #include "libplatform/libplatform.h"
 #include "v8.h"
+#include "_cgo_export.h"
 
 using namespace v8;
 
@@ -37,6 +39,7 @@ struct worker_s {
   std::string last_exception;
   Persistent<Function> recv;
   Persistent<Context> context;
+  std::map<std::string, Eternal<Module>> modules;
 };
 
 // Extracts a C string from a V8 Utf8Value.
@@ -88,6 +91,30 @@ void ExitOnPromiseRejectCallback(PromiseRejectMessage promise_reject_message) {
   }
 
   exit(1);
+}
+
+MaybeLocal<Module> ResolveCallback(Local<Context> context,
+                                   Local<String> specifier,
+                                   Local<Module> referrer) {
+  auto isolate = Isolate::GetCurrent();
+  worker* w = (worker*)isolate->GetData(0);
+
+  HandleScope handle_scope(isolate);
+
+  String::Utf8Value str(specifier);
+  const char* moduleName = *str;
+
+  if (w->modules.count(moduleName) == 0) {
+    std::string out;
+    out.append("Module (");
+    out.append(moduleName);
+    out.append(") has not been loaded");
+    out.append("\n");
+    w->last_exception = out;
+    return MaybeLocal<Module>();
+  }
+
+  return w->modules[moduleName].Get(isolate);
 }
 
 // Exception details will be appended to the first argument.
@@ -151,7 +178,6 @@ std::string ExceptionString(worker* w, TryCatch* try_catch) {
 }
 
 extern "C" {
-#include "_cgo_export.h"
 
 const char* worker_version() { return V8::GetVersion(); }
 
@@ -187,6 +213,90 @@ int worker_load(worker* w, char* name_s, char* source_s) {
   }
 
   Handle<Value> result = script->Run();
+
+  if (result.IsEmpty()) {
+    assert(try_catch.HasCaught());
+    w->last_exception = ExceptionString(w, &try_catch);
+    return 2;
+  }
+
+  return 0;
+}
+
+int worker_load_module(worker* w, char* name_s, char* source_s, int callback_index) {
+  Locker locker(w->isolate);
+  Isolate::Scope isolate_scope(w->isolate);
+  HandleScope handle_scope(w->isolate);
+
+  Local<Context> context = Local<Context>::New(w->isolate, w->context);
+  Context::Scope context_scope(context);
+
+  TryCatch try_catch(w->isolate);
+
+  Local<String> name = String::NewFromUtf8(w->isolate, name_s);
+  Local<String> source_text = String::NewFromUtf8(w->isolate, source_s);
+
+  Local<Integer> line_offset = Integer::New(w->isolate, 0);
+  Local<Integer> column_offset = Integer::New(w->isolate, 0);
+  Local<Boolean> is_cross_origin = True(w->isolate);
+  Local<Integer> script_id = Local<Integer>();
+  Local<Value> source_map_url = Local<Value>();
+  Local<Boolean> is_opaque = False(w->isolate);
+  Local<Boolean> is_wasm = False(w->isolate);
+  Local<Boolean> is_module = True(w->isolate);
+
+  ScriptOrigin origin(name, line_offset, column_offset, is_cross_origin,
+                      script_id, source_map_url, is_opaque, is_wasm, is_module);
+
+  ScriptCompiler::Source source(source_text, origin);
+  Local<Module> module;
+
+  if (!ScriptCompiler::CompileModule(w->isolate, &source).ToLocal(&module)) {
+    assert(try_catch.HasCaught());
+    w->last_exception = ExceptionString(w, &try_catch);
+    return 1;
+  }
+
+  for (int i = 0; i < module->GetModuleRequestsLength(); i++) {
+    Local<String> dependency = module->GetModuleRequest(i);
+    String::Utf8Value str(dependency);
+    char* dependencySpecifier = *str;
+
+    // If we've already loaded the module, skip resolving it.
+    // TODO: Is there ever a time when the specifier would be the same
+    // but would need to be resolved again?
+    if (w->modules.count(dependencySpecifier) != 0) {
+      continue;
+    }
+
+    int ret = ResolveModule(dependencySpecifier, name_s, callback_index);
+    if (ret != 0) {
+      // TODO: Use module->GetModuleRequestLocation() to get source locations
+      std::string out;
+      out.append("Module (");
+      out.append(dependencySpecifier);
+      out.append(") has not been loaded");
+      out.append("\n");
+      w->last_exception = out;
+      return ret;
+    }
+  }
+
+  Eternal<Module> persModule(w->isolate, module);
+  w->modules[name_s] = persModule;
+
+  Maybe<bool> ok = module->InstantiateModule(context, ResolveCallback);
+
+  if (!ok.FromMaybe(false)) {
+    // TODO: I'm not sure if this is needed
+    if (try_catch.HasCaught()) {
+      assert(try_catch.HasCaught());
+      w->last_exception = ExceptionString(w, &try_catch);
+    }
+    return 2;
+  }
+
+  MaybeLocal<Value> result = module->Evaluate(context);
 
   if (result.IsEmpty()) {
     assert(try_catch.HasCaught());

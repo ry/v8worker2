@@ -217,6 +217,55 @@ func TestRequestFromJS(t *testing.T) {
 	}
 }
 
+func TestModules(t *testing.T) {
+	var worker *Worker
+	worker = New(func(msg []byte) []byte {
+		t.Fatal("shouldn't recieve Message")
+		return nil
+	})
+	err2 := worker.LoadModule("code.js", `
+		import { test } from "dependency.js";
+		V8Worker2.print(test);
+	`, func(specifier string, referrer string) int {
+		if specifier != "dependency.js" {
+			t.Fatal(`Expected "dependency.js" specifier`)
+		}
+		if referrer != "code.js" {
+			t.Fatal(`Expected "code.js" referrer`)
+		}
+		err1 := worker.LoadModule("dependency.js", `
+			export const test = "ready";
+		`, func(_, _ string) int {
+			t.Fatal(`Expected module resolver callback to not be called`)
+			return 1
+		})
+		if err1 != nil {
+			t.Fatal(err1)
+		}
+		return 0
+	})
+	if err2 != nil {
+		t.Fatal(err2)
+	}
+}
+
+func TestModulesMissingDependency(t *testing.T) {
+	worker := New(func(msg []byte) []byte {
+		t.Fatal("shouldn't recieve Message")
+		return nil
+	})
+	err := worker.LoadModule("code.js", `
+		import { test } from "missing.js";
+		V8Worker2.print(test);
+	`, func(specifier string, referrer string) int {
+		if specifier != "missing.js" {
+			t.Fatal(`Expected "missing.js" specifier`)
+		}
+		return 1
+	})
+	errorContains(t, err, "missing.js")
+}
+
 // Test breaking script execution
 func TestWorkerBreaking(t *testing.T) {
 	worker := New(func(msg []byte) []byte {

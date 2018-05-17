@@ -44,6 +44,7 @@ worker* worker_new(int table_index);
 // returns nonzero on error
 // get error from worker_last_exception
 int worker_load(worker* w, char* name_s, char* source_s);
+int worker_load_module(worker* w, char* name_s, char* source_s, int callback_index);
 
 const char* worker_last_exception(worker* w);
 

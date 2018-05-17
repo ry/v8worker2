@@ -38,6 +38,11 @@ type workerTableIndex int
 
 var workerTableLock sync.Mutex
 
+// These are used for handling ModuleResolverCallbacks per LoadModule invocation
+var resolverTableLock sync.Mutex
+var nextResolverToken int
+var resolverFuncs = make(map[int]ModuleResolverCallback)
+
 // This table will store all pointers to all active workers. Because we can't safely
 // pass pointers to Go objects to C, we instead pass a key to this table.
 var workerTable = make(map[workerTableIndex]*worker)
@@ -47,6 +52,9 @@ var workerTableNextAvailable workerTableIndex = 0
 
 // To receive messages from javascript.
 type ReceiveMessageCallback func(msg []byte) []byte
+
+// To resolve modules from javascript.
+type ModuleResolverCallback func(moduleName, referrerName string) int
 
 // Don't init V8 more than once.
 var initV8Once sync.Once
@@ -125,6 +133,23 @@ func recvCb(buf unsafe.Pointer, buflen C.int, index workerTableIndex) C.buf {
 	}
 }
 
+//export ResolveModule
+func ResolveModule(moduleSpecifier *C.char, referrerSpecifier *C.char, resolverToken int) C.int {
+	moduleName := C.GoString(moduleSpecifier)
+	// TODO: Remove this when I'm not dealing with Node resolution anymore
+	referrerName := C.GoString(referrerSpecifier)
+
+	resolverTableLock.Lock()
+	resolve := resolverFuncs[resolverToken]
+	resolverTableLock.Unlock()
+
+	if resolve == nil {
+		return C.int(1)
+	}
+	ret := resolve(moduleName, referrerName)
+	return C.int(ret)
+}
+
 // Creates a new worker, which corresponds to a V8 isolate. A single threaded
 // standalone execution context.
 func New(cb ReceiveMessageCallback) *Worker {
@@ -178,6 +203,37 @@ func (w *Worker) Load(scriptName string, code string) error {
 	defer C.free(unsafe.Pointer(code_s))
 
 	r := C.worker_load(w.worker.cWorker, scriptName_s, code_s)
+	if r != 0 {
+		errStr := C.GoString(C.worker_last_exception(w.worker.cWorker))
+		return errors.New(errStr)
+	}
+	return nil
+}
+
+// LoadModule loads and executes a javascript module with filename specified by
+// scriptName and the contents of the module specified by the param code.
+// All `import` dependencies must be loaded before a script otherwise it will error.
+func (w *Worker) LoadModule(scriptName string, code string, resolve ModuleResolverCallback) error {
+	scriptName_s := C.CString(scriptName)
+	code_s := C.CString(code)
+	defer C.free(unsafe.Pointer(scriptName_s))
+	defer C.free(unsafe.Pointer(code_s))
+
+	// Register the callback before we attempt to load a module
+	resolverTableLock.Lock()
+	nextResolverToken++
+	token := nextResolverToken
+	resolverFuncs[token] = resolve
+	resolverTableLock.Unlock()
+	token_i := C.int(token)
+
+	r := C.worker_load_module(w.worker.cWorker, scriptName_s, code_s, token_i)
+
+	// Unregister the callback after the module is loaded
+	resolverTableLock.Lock()
+	delete(resolverFuncs, token)
+	resolverTableLock.Unlock()
+
 	if r != 0 {
 		errStr := C.GoString(C.worker_last_exception(w.worker.cWorker))
 		return errors.New(errStr)
