@@ -5,10 +5,19 @@ import stat
 import subprocess
 import sys
 import distutils.spawn
+import argparse
+import platform
+
+parser = argparse.ArgumentParser(description="v8worker2 build.py")
+parser.add_argument('--rebuild', dest='rebuild', action='store_true')
+parser.set_defaults(rebuild=False)
+args = parser.parse_args()
 
 root_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+prebuilt_path = os.path.join(root_path, "prebuilt")
 v8_path = os.path.join(root_path, "v8")
-out_path = os.path.join(root_path, "out/v8build")
+out_path = os.path.join(root_path, "out/")
+v8build_path = os.path.join(root_path, "out/v8build")
 depot_tools = os.path.join(root_path, "depot_tools")
 
 # To get a list of args
@@ -64,6 +73,19 @@ GCLIENT_SOLUTION = [
 ]
 
 def main():
+  lib_fn = os.path.join(prebuilt_path, platform_name(), "libv8_monolith.a")
+  if args.rebuild or not os.path.exists(lib_fn):
+    print "Rebuilding V8"
+    lib_fn = Rebuild()
+  else:
+    print "Using prebuilt V8", lib_fn
+  WriteProgramConifgFile(lib_fn)
+
+def platform_name():
+  u = platform.uname()
+  return (u[0] + "-" + u[4]).lower()
+
+def Rebuild():
   env = os.environ.copy()
 
   EnsureDeps(v8_path)
@@ -73,25 +95,28 @@ def main():
   ninja_path = os.path.join(depot_tools, "ninja")
   assert os.path.exists(ninja_path)
 
-  args = GN_ARGS.replace('\n', ' ')
+  gn_args = GN_ARGS.replace('\n', ' ')
 
   ccache_fn = distutils.spawn.find_executable("ccache")
   if ccache_fn:
-    args += " cc_wrapper=\"%s\"" % ccache_fn
+    gn_args += " cc_wrapper=\"%s\"" % ccache_fn
 
   print "Running gn"
-  subprocess.check_call([gn_path, "gen", out_path, "--args=" + args],
+  subprocess.check_call([gn_path, "gen", v8build_path, "--args=" + gn_args],
                         cwd=v8_path,
                         env=env)
   print "Running ninja"
-  subprocess.check_call([ninja_path, "-v", "-C", out_path, "v8_monolith"],
+  subprocess.check_call([ninja_path, "-v", "-C", v8build_path, "v8_monolith"],
                         cwd=v8_path,
                         env=env)
-  WriteProgramConifgFile()
-
-def WriteProgramConifgFile():
   lib_fn = os.path.join(root_path, "out/v8build/obj/libv8_monolith.a")
+  return lib_fn
+
+def WriteProgramConifgFile(lib_fn):
   assert os.path.exists(lib_fn)
+  if not os.path.isdir(out_path):
+    os.makedirs(out_path)
+
   pc_fn = os.path.join(root_path, "out/v8.pc")
   include_dir = os.path.join(root_path, "v8/include")
   with open(pc_fn, 'w+') as f:
