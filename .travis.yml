@@ -1,10 +1,17 @@
 language: go
 go:
- - 1.9.2
+  - 1.9.2
 before_cache:
   - ccache -s
-cache: ccache
+env:
+  global:
+    - USE_CCACHE=1
+cache:
+  directories:
+    - $HOME/.ccache
 install:
- - ./tools/build.py
+  - mkdir -p $HOME/.ccache
+  - export PATH=/usr/lib/ccache:$PATH
+  - ./tools/build.py
 script:
- - ./tools/test.sh
+  - ./tools/test.sh
