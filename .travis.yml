@@ -1,10 +1,9 @@
 language: go
 go:
  - 1.9.2
-cache:
-  directories:
-   - $HOME/.ccache
-   - ./out
+before_cache:
+  - ccache -s
+cache: ccache
 install:
  - ./tools/build.py
 script:
