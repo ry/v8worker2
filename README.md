@@ -19,16 +19,7 @@ To install:
 ```
 go get github.com/ry/v8worker2
 cd `go env GOPATH`/src/github.com/ry/v8worker2
-./tools/build.py
-go test
-```
-By default `./tools/build.py` will use the prebuilt V8 libraries in the
-`prebuild/` directory.
-
-Providing the `--rebuild` command will compile V8 from scratch.
-```
-cd `go env GOPATH`/src/github.com/ry/v8worker2
-./tools/build.py --rebuild # Will take ~30 minutes to compile.
+./tools/build.py # Will take ~30 minutes to compile.
 go test
 ```
 If you have ccache installed, the build will take advantage of it.
