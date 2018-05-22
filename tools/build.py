@@ -42,7 +42,7 @@ GN_ARGS = """
   v8_target_cpu="x64"
   v8_untrusted_code_mitigations=false
   v8_use_external_startup_data=false
-  v8_use_snapshot=false
+  v8_use_snapshot=true
 """
 
 GCLIENT_SOLUTION = [
