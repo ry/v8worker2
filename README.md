@@ -39,7 +39,7 @@ for the details.
 
 Documentation is at https://godoc.org/github.com/ry/v8worker2 and
 example usage is at
-[worker_test.go](https://github.com/ry/v8worker/blob/master/worker_test.go)
+[worker_test.go](https://github.com/ry/v8worker2/blob/master/worker_test.go)
 
 
 ## Difference from the original v8worker
