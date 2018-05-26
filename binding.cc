@@ -110,7 +110,7 @@ extern "C" {
 const char* worker_version() { return V8::GetVersion(); }
 
 void worker_set_flags(int* argc, char** argv) {
-	V8::SetFlagsFromCommandLine(argc, argv, true);
+  V8::SetFlagsFromCommandLine(argc, argv, true);
 }
 
 const char* worker_last_exception(worker* w) {
@@ -278,7 +278,7 @@ void FatalErrorCallback2(const char* location, const char* message) {
 */
 
 void ExitOnPromiseRejectCallback(PromiseRejectMessage message) {
-  auto  exception = message.GetValue();
+  auto exception = message.GetValue();
 
   auto isolate = Isolate::GetCurrent();
   auto m = Exception::CreateMessage(isolate, exception);
@@ -302,10 +302,10 @@ worker* worker_new(int table_index) {
   w->isolate = isolate;
   // Leaving this code here because it will probably be useful later on, but
   // disabling it now as I haven't got tests for the desired behavior.
-  //w->isolate->SetCaptureStackTraceForUncaughtExceptions(true);
-  //w->isolate->SetAbortOnUncaughtExceptionCallback(AbortOnUncaughtExceptionCallback);
-  //w->isolate->AddMessageListener(MessageCallback2);
-  //w->isolate->SetFatalErrorHandler(FatalErrorCallback2);
+  // w->isolate->SetCaptureStackTraceForUncaughtExceptions(true);
+  // w->isolate->SetAbortOnUncaughtExceptionCallback(AbortOnUncaughtExceptionCallback);
+  // w->isolate->AddMessageListener(MessageCallback2);
+  // w->isolate->SetFatalErrorHandler(FatalErrorCallback2);
   w->isolate->SetPromiseRejectCallback(ExitOnPromiseRejectCallback);
   w->isolate->SetData(0, w);
   w->table_index = table_index;
