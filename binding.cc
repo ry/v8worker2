@@ -263,6 +263,31 @@ void v8_init() {
   V8::Initialize();
 }
 
+/*
+bool AbortOnUncaughtExceptionCallback(Isolate* isolate) {
+  return true;
+}
+
+void MessageCallback2(Local<Message> message, Local<Value> data) {
+  printf("MessageCallback2\n\n");
+}
+
+void FatalErrorCallback2(const char* location, const char* message) {
+  printf("FatalErrorCallback2\n");
+}
+*/
+
+void ExitOnPromiseRejectCallback(PromiseRejectMessage message) {
+  auto  exception = message.GetValue();
+
+  auto isolate = Isolate::GetCurrent();
+  auto m = Exception::CreateMessage(isolate, exception);
+
+  printf("Unhandled Promise\n");
+  m->PrintCurrentStackTrace(isolate, stdout);
+  exit(1);
+}
+
 worker* worker_new(int table_index) {
   worker* w = new (worker);
 
@@ -275,7 +300,13 @@ worker* worker_new(int table_index) {
   HandleScope handle_scope(isolate);
 
   w->isolate = isolate;
-  w->isolate->SetCaptureStackTraceForUncaughtExceptions(true);
+  // Leaving this code here because it will probably be useful later on, but
+  // disabling it now as I haven't got tests for the desired behavior.
+  //w->isolate->SetCaptureStackTraceForUncaughtExceptions(true);
+  //w->isolate->SetAbortOnUncaughtExceptionCallback(AbortOnUncaughtExceptionCallback);
+  //w->isolate->AddMessageListener(MessageCallback2);
+  //w->isolate->SetFatalErrorHandler(FatalErrorCallback2);
+  w->isolate->SetPromiseRejectCallback(ExitOnPromiseRejectCallback);
   w->isolate->SetData(0, w);
   w->table_index = table_index;
 
