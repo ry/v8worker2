@@ -44,6 +44,52 @@ const char* ToCString(const String::Utf8Value& value) {
   return *value ? *value : "<string conversion failed>";
 }
 
+/*
+bool AbortOnUncaughtExceptionCallback(Isolate* isolate) {
+  return true;
+}
+
+void MessageCallback2(Local<Message> message, Local<Value> data) {
+  printf("MessageCallback2\n\n");
+}
+
+void FatalErrorCallback2(const char* location, const char* message) {
+  printf("FatalErrorCallback2\n");
+}
+*/
+
+void ExitOnPromiseRejectCallback(PromiseRejectMessage promise_reject_message) {
+  auto isolate = Isolate::GetCurrent();
+  worker* w = (worker*)isolate->GetData(0);
+  assert(w->isolate == isolate);
+  HandleScope handle_scope(w->isolate);
+  auto context = w->context.Get(w->isolate);
+
+  auto exception = promise_reject_message.GetValue();
+
+  auto message = Exception::CreateMessage(isolate, exception);
+  auto onerrorStr = String::NewFromUtf8(w->isolate, "onerror");
+  auto onerror = context->Global()->Get(onerrorStr);
+
+  if (onerror->IsFunction()) {
+    Local<Function> func = Local<Function>::Cast(onerror);
+    Local<Value> args[5];
+    auto origin = message->GetScriptOrigin();
+    args[0] = exception->ToString();
+    args[1] = message->GetScriptResourceName();
+    args[2] = origin.ResourceLineOffset();
+    args[3] = origin.ResourceColumnOffset();
+    args[4] = exception;
+    func->Call(context->Global(), 5, args);
+    /* message, source, lineno, colno, error */
+  } else {
+    printf("Unhandled Promise\n");
+    message->PrintCurrentStackTrace(isolate, stdout);
+  }
+
+  exit(1);
+}
+
 // Exception details will be appended to the first argument.
 std::string ExceptionString(worker* w, TryCatch* try_catch) {
   std::string out;
@@ -176,8 +222,7 @@ void Recv(const FunctionCallbackInfo<Value>& args) {
 
   HandleScope handle_scope(isolate);
 
-  Local<Context> context = Local<Context>::New(w->isolate, w->context);
-  Context::Scope context_scope(context);
+  auto context = w->context.Get(w->isolate);
 
   Local<Value> v = args[0];
   assert(v->IsFunction());
@@ -195,8 +240,7 @@ void Send(const FunctionCallbackInfo<Value>& args) {
   Locker locker(w->isolate);
   EscapableHandleScope handle_scope(isolate);
 
-  Local<Context> context = Local<Context>::New(w->isolate, w->context);
-  Context::Scope context_scope(context);
+  auto context = w->context.Get(w->isolate);
 
   Local<Value> v = args[0];
   assert(v->IsArrayBuffer());
@@ -260,31 +304,6 @@ void v8_init() {
   Platform* platform = platform::CreateDefaultPlatform();
   V8::InitializePlatform(platform);
   V8::Initialize();
-}
-
-/*
-bool AbortOnUncaughtExceptionCallback(Isolate* isolate) {
-  return true;
-}
-
-void MessageCallback2(Local<Message> message, Local<Value> data) {
-  printf("MessageCallback2\n\n");
-}
-
-void FatalErrorCallback2(const char* location, const char* message) {
-  printf("FatalErrorCallback2\n");
-}
-*/
-
-void ExitOnPromiseRejectCallback(PromiseRejectMessage message) {
-  auto exception = message.GetValue();
-
-  auto isolate = Isolate::GetCurrent();
-  auto m = Exception::CreateMessage(isolate, exception);
-
-  printf("Unhandled Promise\n");
-  m->PrintCurrentStackTrace(isolate, stdout);
-  exit(1);
 }
 
 worker* worker_new(int table_index) {
