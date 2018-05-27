@@ -230,8 +230,7 @@ int worker_send_bytes(worker* w, void* data, size_t len) {
   Isolate::Scope isolate_scope(w->isolate);
   HandleScope handle_scope(w->isolate);
 
-  Local<Context> context = Local<Context>::New(w->isolate, w->context);
-  Context::Scope context_scope(context);
+  auto context = w->context.Get(w->isolate);
 
   TryCatch try_catch(w->isolate);
 
@@ -326,7 +325,7 @@ worker* worker_new(int table_index) {
 
   Local<Context> context = Context::New(w->isolate, NULL, global);
   w->context.Reset(w->isolate, context);
-  // context->Enter();
+  context->Enter();
 
   return w;
 }
