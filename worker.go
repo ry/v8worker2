@@ -23,7 +23,7 @@ package v8worker2
 
 /*
 #cgo CXXFLAGS: -std=c++11
-#cgo pkg-config: out/v8.pc
+#cgo pkg-config: v8.pc
 #include <stdlib.h>
 #include "binding.h"
 */

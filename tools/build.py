@@ -17,7 +17,7 @@ root_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 prebuilt_path = os.path.join(root_path, "prebuilt")
 v8_path = os.path.join(root_path, "v8")
 out_path = os.path.join(root_path, "out/")
-v8build_path = os.path.join(root_path, "out/v8build")
+v8build_path = os.path.join(out_path, "v8build")
 depot_tools = os.path.join(root_path, "depot_tools")
 
 # To get a list of args
@@ -109,7 +109,7 @@ def Rebuild():
   subprocess.check_call([ninja_path, "-v", "-C", v8build_path, "v8_monolith"],
                         cwd=v8_path,
                         env=env)
-  lib_fn = os.path.join(root_path, "out/v8build/obj/libv8_monolith.a")
+  lib_fn = os.path.join(v8build_path, "obj/libv8_monolith.a")
   return lib_fn
 
 def WriteProgramConifgFile(lib_fn):
@@ -117,8 +117,8 @@ def WriteProgramConifgFile(lib_fn):
   if not os.path.isdir(out_path):
     os.makedirs(out_path)
 
-  pc_fn = os.path.join(root_path, "out/v8.pc")
-  include_dir = os.path.join(root_path, "v8/include")
+  pc_fn = os.path.join(root_path, "v8.pc")
+  include_dir = os.path.join(v8_path, "include")
   with open(pc_fn, 'w+') as f:
     f.write("Name: v8\n")
     f.write("Description: v8\n")
@@ -135,7 +135,7 @@ def EnsureDeps(v8_path):
   # gclient needs to have depot_tools in the PATH.
   env["PATH"] = depot_tools + os.pathsep + env["PATH"]
   subprocess.check_call(["gclient", "sync", "--spec", spec],
-                        cwd=os.path.join(v8_path, os.path.pardir),
+                        cwd=root_path,
                         env=env)
 
 if __name__ == "__main__":
