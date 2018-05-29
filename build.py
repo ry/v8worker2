@@ -22,12 +22,13 @@ v8build_path = os.path.join(out_path, "v8build")
 depot_tools = os.path.join(root_path, "depot_tools")
 
 # To get a list of args
-# (cd v8 && ../depot_tools/gn args ../out/v8build/ --list | vim -)
+#   cd v8 && ../depot_tools/gn args ../out/v8build/ --list
 GN_ARGS = """
   is_component_build=false
   is_debug=false
   libcpp_is_static=false
   symbol_level=1
+  treat_warnings_as_errors=false
   use_custom_libcxx=false
   use_sysroot=false
   v8_deprecation_warnings=false

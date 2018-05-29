@@ -4,10 +4,10 @@ before_cache:
 cache: ccache
 before_install: |
   sudo apt-get -qq update
-  sudo apt-get install -y golang
-  export GOROOT=$HOME/go
-  mkdir $GOROOT
+  sudo apt-get install -y golang-go
+  export GOPATH=$HOME/go
+  mkdir $GOPATH
 install:
   - ./build.py --use_ccache
 script:
-  - ./tools/test.sh
+  - go test -v
