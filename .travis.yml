@@ -1,17 +1,13 @@
-language: go
-go:
-  - 1.9.2
+language: c++
 before_cache:
   - ccache -s
-env:
-  global:
-    - USE_CCACHE=1
-cache:
-  directories:
-    - $HOME/.ccache
+cache: ccache
+before_install: |
+  sudo apt-get -qq update
+  sudo apt-get install -y golang
+  export GOROOT=$HOME/go
+  mkdir $GOROOT
 install:
-  - mkdir -p $HOME/.ccache
-  - export PATH=/usr/lib/ccache:$PATH
-  - ./tools/build.py
+  - ./tools/build.py --use_ccache
 script:
   - ./tools/test.sh
