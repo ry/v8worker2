@@ -8,6 +8,6 @@ before_install: |
   export GOROOT=$HOME/go
   mkdir $GOROOT
 install:
-  - ./tools/build.py --use_ccache
+  - ./build.py --use_ccache
 script:
   - ./tools/test.sh

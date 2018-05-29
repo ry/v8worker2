@@ -14,7 +14,7 @@ parser.add_argument('--use_ccache', dest='use_ccache', action='store_true')
 parser.set_defaults(rebuild=False, use_ccache=False)
 args = parser.parse_args()
 
-root_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+root_path = os.path.dirname(os.path.realpath(__file__))
 prebuilt_path = os.path.join(root_path, "prebuilt")
 v8_path = os.path.join(root_path, "v8")
 out_path = os.path.join(root_path, "out/")

@@ -19,10 +19,11 @@ To install:
 ```
 go get github.com/ry/v8worker2
 cd `go env GOPATH`/src/github.com/ry/v8worker2
-./tools/build.py # Will take ~30 minutes to compile.
+./build.py # Will take ~30 minutes to compile.
 go test
 ```
-If you have ccache installed, the build will take advantage of it.
+If you have ccache installed, `./build.py --use_ccache` will take advantage of
+it. This is useful to avoid rebuilding V8 so much.
 
 
 ## JavaScript API
