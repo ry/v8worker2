@@ -10,7 +10,8 @@ import platform
 
 parser = argparse.ArgumentParser(description="v8worker2 build.py")
 parser.add_argument('--rebuild', dest='rebuild', action='store_true')
-parser.set_defaults(rebuild=False)
+parser.add_argument('--use_ccache', dest='use_ccache', action='store_true')
+parser.set_defaults(rebuild=False, use_ccache=False)
 args = parser.parse_args()
 
 root_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
@@ -97,9 +98,10 @@ def Rebuild():
 
   gn_args = GN_ARGS.replace('\n', ' ')
 
-  ccache_fn = distutils.spawn.find_executable("ccache")
-  if ccache_fn:
-    gn_args += " cc_wrapper=\"%s\"" % ccache_fn
+  if args.use_ccache:
+    ccache_fn = distutils.spawn.find_executable("ccache")
+    if ccache_fn:
+      gn_args += " cc_wrapper=\"%s\"" % ccache_fn
 
   print "Running gn"
   subprocess.check_call([gn_path, "gen", v8build_path, "--args=" + gn_args],
