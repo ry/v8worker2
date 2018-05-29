@@ -76,6 +76,10 @@ func SetFlags(args []string) []string {
 	// We need to turn args into a **char so it can be modified by V8.
 	// Then we will turn the result back into a Go array and return it.
 
+	// V8 ignores the first arg. To workaround this, unshift a dummy element on to
+	// the args and shift it off at the end.
+	args = append([]string{"dummy"}, args...)
+
 	// Step 1: turn args into a C array called argv.
 	ptrSize := C.size_t(unsafe.Sizeof(uintptr(0)))
 	argv := C.malloc(ptrSize * C.size_t(len(args)))
@@ -96,7 +100,10 @@ func SetFlags(args []string) []string {
 	for i := 0; i < int(argc); i++ {
 		out[i] = C.GoString(a[i])
 	}
-	return out
+	if out[0] != "dummy" {
+		panic("Expected the first element to be our dummy")
+	}
+	return out[1:]
 }
 
 func workerTableLookup(index workerTableIndex) *worker {
