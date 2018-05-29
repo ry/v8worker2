@@ -11,15 +11,19 @@ import platform
 parser = argparse.ArgumentParser(description="v8worker2 build.py")
 parser.add_argument('--rebuild', dest='rebuild', action='store_true')
 parser.add_argument('--use_ccache', dest='use_ccache', action='store_true')
-parser.set_defaults(rebuild=False, use_ccache=False)
+parser.add_argument('--out_path', nargs=1, dest='out_path', type=str, action='store')
+parser.set_defaults(rebuild=False, use_ccache=False, out_path=None)
 args = parser.parse_args()
 
 root_path = os.path.dirname(os.path.realpath(__file__))
 prebuilt_path = os.path.join(root_path, "prebuilt")
 v8_path = os.path.join(root_path, "v8")
-out_path = os.path.join(root_path, "out/")
-v8build_path = os.path.join(out_path, "v8build")
 depot_tools = os.path.join(root_path, "depot_tools")
+out_path = os.path.join(root_path, "out/")
+if args.out_path:
+  out_path = args.out_path[0]
+print "out_path", args.out_path
+v8build_path = os.path.join(out_path, "v8build")
 
 # To get a list of args
 #   cd v8 && ../depot_tools/gn args ../out/v8build/ --list
