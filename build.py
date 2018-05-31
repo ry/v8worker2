@@ -22,7 +22,7 @@ depot_tools = os.path.join(root_path, "depot_tools")
 out_path = os.path.join(root_path, "out/")
 if args.out_path:
   out_path = args.out_path[0]
-print "out_path", args.out_path
+print("out_path %s" % args.out_path)
 v8build_path = os.path.join(out_path, "v8build")
 
 # To get a list of args
@@ -81,10 +81,10 @@ GCLIENT_SOLUTION = [
 def main():
   lib_fn = os.path.join(prebuilt_path, platform_name(), "libv8_monolith.a")
   if args.rebuild or not os.path.exists(lib_fn):
-    print "Rebuilding V8"
+    print("Rebuilding V8")
     lib_fn = Rebuild()
   else:
-    print "Using prebuilt V8", lib_fn
+    print("Using prebuilt V8 %s" % lib_fn)
   WriteProgramConifgFile(lib_fn)
 
 def platform_name():
@@ -108,11 +108,11 @@ def Rebuild():
     if ccache_fn:
       gn_args += " cc_wrapper=\"%s\"" % ccache_fn
 
-  print "Running gn"
+  print("Running gn")
   subprocess.check_call([gn_path, "gen", v8build_path, "--args=" + gn_args],
                         cwd=v8_path,
                         env=env)
-  print "Running ninja"
+  print("Running ninja")
   subprocess.check_call([ninja_path, "-v", "-C", v8build_path, "v8_monolith"],
                         cwd=v8_path,
                         env=env)
@@ -132,12 +132,12 @@ def WriteProgramConifgFile(lib_fn):
     f.write("Version: xxx\n")
     f.write("Cflags: -I%s\n" % include_dir)
     f.write("Libs: %s\n" % lib_fn)
-  print "Wrote " + pc_fn
+  print("Wrote %s" % pc_fn)
 
 def EnsureDeps(v8_path):
   # Now call gclient sync.
   spec = "solutions = %s" % GCLIENT_SOLUTION
-  print "Fetching dependencies."
+  print("Fetching dependencies.")
   env = os.environ.copy()
   # gclient needs to have depot_tools in the PATH.
   env["PATH"] = depot_tools + os.pathsep + env["PATH"]
