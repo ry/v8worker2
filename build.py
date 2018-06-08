@@ -12,6 +12,7 @@ parser = argparse.ArgumentParser(description="v8worker2 build.py")
 parser.add_argument('--rebuild', dest='rebuild', action='store_true')
 parser.add_argument('--use_ccache', dest='use_ccache', action='store_true')
 parser.add_argument('--out_path', nargs=1, dest='out_path', type=str, action='store')
+parser.add_argument('--depot_tools_path', nargs=1, dest='depot_tools_path', type=str, action='store')
 parser.set_defaults(rebuild=False, use_ccache=False, out_path=None)
 args = parser.parse_args()
 
@@ -24,6 +25,8 @@ if args.out_path:
   out_path = args.out_path[0]
 print("out_path %s" % args.out_path)
 v8build_path = os.path.join(out_path, "v8build")
+if args.depot_tools_path:
+  depot_tools = args.depot_tools_path[0]
 
 # To get a list of args
 #   cd v8 && ../depot_tools/gn args ../out/v8build/ --list
