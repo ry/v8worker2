@@ -88,7 +88,7 @@ def main():
     lib_fn = Rebuild()
   else:
     print("Using prebuilt V8 %s" % lib_fn)
-  WriteProgramConifgFile(lib_fn)
+  WriteProgramConfigFile(lib_fn)
 
 def platform_name():
   u = platform.uname()
@@ -122,7 +122,7 @@ def Rebuild():
   lib_fn = os.path.join(v8build_path, "obj/libv8_monolith.a")
   return lib_fn
 
-def WriteProgramConifgFile(lib_fn):
+def WriteProgramConfigFile(lib_fn):
   assert os.path.exists(lib_fn)
   if not os.path.isdir(out_path):
     os.makedirs(out_path)
