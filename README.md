@@ -29,7 +29,7 @@ it. This is useful to avoid rebuilding V8 so much.
 ## JavaScript API
 
 The JavaScript interface is exposed thru a single global namespace `V8Worker2`.
-The interface has just three methods `V8worker2.print()`, `V8Worker2.send()`,
+The interface has just three methods `V8Worker2.print()`, `V8Worker2.send()`,
 and `V8Worker2.recv()`.
 See
 [v8worker2.d.ts](https://github.com/ry/v8worker2/blob/master/v8worker2.d.ts)
