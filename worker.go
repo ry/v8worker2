@@ -244,8 +244,11 @@ func (w *Worker) LoadModule(scriptName string, code string, resolve ModuleResolv
 // Same as Send but for []byte. $recv callback will get an ArrayBuffer.
 func (w *Worker) SendBytes(msg []byte) error {
 	msg_p := C.CBytes(msg)
-	defer C.free(msg_p)
 
+	// C.CBytes allocates memory on the C heap that is used as the backing
+	// storage for the ArrayBuffer given to javascript. v8 will free the buffer
+	// as part of the ArrayBuffer garbage collection as we create the AB with
+	// ArrayBufferCreationMode::kInternalized in worker_send_bytes.
 	r := C.worker_send_bytes(w.worker.cWorker, msg_p, C.size_t(len(msg)))
 	if r != 0 {
 		errStr := C.GoString(C.worker_last_exception(w.worker.cWorker))
