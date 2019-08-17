@@ -5,7 +5,7 @@
 This is a minimal binding between Go (golang) and V8 JavaScript. Basic concept
 is to only expose two methods to JavaScript: send and receive.
 
-V8 Version: 6.8.275.3 (May 2018)
+V8 Version: 6.9.427.19 (August 2018)
 
 [A rather dated presentation on this project](https://docs.google.com/presentation/d/1RgGVgLuP93mPZ0lqHhm7TOpxZBI3TEdAJQZzFqeleAE/edit?usp=sharing)
 
